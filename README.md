@@ -141,7 +141,13 @@ policies:
     sni: cruise-demo.bytesbrains.net   # must match `host`
 ```
 
-Two things make this cost more time than it should:
+In fairness to upstream: their [OpenAI-compatible providers page](https://agentgateway.dev/docs/kubernetes/latest/integrations/llm/providers/openai-compatible/)
+does include this block in every provider example and in its generic template, and its field table
+says `policies.tls.sni` enables TLS. Copy their template and you are fine. The trap bites when you
+carry the standalone mental model across, or write the backend from the CRD schema — where nothing
+says `port: 443` is not enough.
+
+Two things make it cost more time than it should when it does bite:
 
 1. **It is not a `BackendTLSPolicy`.** Despite what the Gateway API habit suggests, TLS to an
    `AgentgatewayBackend` is `spec.ai.groups.providers[].policies.tls` on the backend itself. Writing a
