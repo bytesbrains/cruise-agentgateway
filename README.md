@@ -51,9 +51,15 @@ cp .env.example .env     # then put your cru_ key in it — .env is gitignored
 ./smoke.sh
 ```
 
+`.env.example` points `CRUISE_BASE_URL` at the **demo** by default, so the quick start costs nothing
+and needs no production credentials. Switch it to `https://cruise.bytesbrains.net/v1` for production,
+and use a `cru_` key rather than a `cru_demo_` one — the two are not interchangeable.
+
 `smoke.sh` brings the gateway up, sends one completion, asserts it came back `200` with Cruise's
-telemetry intact, shows lane routing across three lanes, and tears everything down. It exits non-zero
-if any of that fails.
+telemetry intact, then calls three lanes and asserts each one was booked against the lane it asked
+for, before tearing everything down. It exits non-zero if any of that fails. Which *model* Cruise
+picks per lane is reported rather than asserted — that is a property of Cruise's catalogue, not of
+this integration, so it should not fail a smoke test the day the catalogue narrows.
 
 To leave the gateway running and talk to it yourself:
 
@@ -179,6 +185,11 @@ curl -s http://localhost:8080/v1/chat/completions \
 
 The Secret's key must be `Authorization` and its value the whole header, `Bearer ` included.
 
+The manifest ships pointing at the demo. For production, change `host` **and** `sni` in
+`01-backend.yaml` to `cruise.bytesbrains.net` — they must match — and create the Secret from a `cru_`
+key. Unlike the standalone config there is no `$CRUISE_BASE_URL` indirection here; the host is spelled
+out in the manifest.
+
 ## Versions
 
 This matters more than usual, because the standalone recipe **does not run on the newest published
@@ -210,7 +221,7 @@ config here keeps `$` out of its comments regardless.
 | --- | --- |
 | `400 The plain HTTP request was sent to HTTPS port` | Missing `policies.tls` on a Kubernetes backend |
 | `401 Incorrect API key provided.` | Cruise rejecting the key, relayed intact. Often a `cru_demo_` key against production or the reverse — check `CRUISE_BASE_URL` against the key prefix |
-| `401 Missing bearer token.` | No key reached Cruise. Check the Secret's key name is `Authorization` |
+| `401 Missing bearer token.` | No key reached Cruise. Either the Secret's key is not named `Authorization`, or `00-secret.example.yaml` was applied unedited — its value is empty on purpose |
 | `llm: unknown field` | agentgateway too old — see [Versions](#versions) |
 
 A `cf-ray` header on a response means the request reached Cruise rather than dying in the gateway.
