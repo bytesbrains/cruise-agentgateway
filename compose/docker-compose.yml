@@ -14,6 +14,8 @@ services:
     # published release is 0.8.2 and it does NOT understand this config — the
     # standalone `llm:` block only exists on the 1.x line. See the README.
     #   To track upstream instead: ghcr.io/agentgateway/agentgateway:latest
+    # If this digest ever fails to pull, it has stopped being served: repin to
+    # :latest, and if the config then fails to load, the 1.x line has moved on.
     image: ghcr.io/agentgateway/agentgateway@sha256:7f3c4cea80587abf2290dff7f563fc9f9885ed17052c08347b4d164a4de62f99
     container_name: cruise-agentgateway
     command: ["-f", "/etc/agentgateway/config.yaml"]
