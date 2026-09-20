@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+#
+# agentgateway (standalone) in front of BytesBrains Cruise.
+#
+# Cruise speaks the OpenAI API, so this needs no plugin, no fork and no package —
+# it is agentgateway's generic OpenAI-compatible provider with `baseUrl` pointed
+# at Cruise. Verified against ghcr.io/agentgateway/agentgateway:1.6.0-alpha.1.
+
+config:
+  readinessAddr: 0.0.0.0:19001
+  statsAddr: 0.0.0.0:19002
+
+llm:
+  port: 4000
+
+  providers:
+    - name: cruise
+      provider: openAI
+      params:
+        # An `https://` baseUrl enables TLS on its own — it expands to host,
+        # path prefix and TLS. No BackendTLSPolicy, no `tls:` block, no `sni`.
+        # This was not always true; see "The TLS gotcha" in the README.
+        baseUrl: $CRUISE_BASE_URL
+
+        # Read from the environment at startup. A `cru_` key never belongs in a
+        # committed file, and with environment expansion it never has to be in one.
+        apiKey: $CRUISE_API_KEY
+
+  models:
+    # Catch-all. The model id in the request is passed to Cruise unchanged, so
+    # every Cruise lane (`bb/code-review`, `bb/summarization`, ...) and every
+    # pinned model (`anthropic/claude-sonnet-5`, ...) works without being listed
+    # here. Cruise decides which model serves a lane; the gateway does not care.
+    - name: "*"
+      provider:
+        reference: cruise

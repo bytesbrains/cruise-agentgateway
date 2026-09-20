@@ -1,0 +1,35 @@
+# Cruise as an LLM backend for agentgateway on Kubernetes.
+#
+# The key comes from the Secret created separately — see 00-secret.example.yaml.
+# Verified against the agentgateway v1.5.0 Helm chart, Gateway API v1.6.0.
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: cruise
+  namespace: cruise
+spec:
+  ai:
+    groups:
+      - providers:
+          - name: cruise
+            # Cruise speaks the OpenAI API, so it is the `openai` provider with
+            # the host and path pointed at Cruise instead of api.openai.com.
+            openai: {}
+            # The free demo. For production Cruise, change BOTH this and the
+            # `sni` below to cruise.bytesbrains.net — they must match — and use
+            # a `cru_` key instead of a `cru_demo_` one. Unlike the standalone
+            # config, this manifest is not environment-driven: Kubernetes has no
+            # equivalent of $CRUISE_BASE_URL here, so the host is spelled out.
+            host: cruise-demo.bytesbrains.net
+            port: 443
+            path: /v1/chat/completions
+            policies:
+              auth:
+                secretRef:
+                  name: cruise-api-key
+              # Unlike the standalone config — where an https:// baseUrl turns
+              # TLS on by itself — a custom host here needs TLS stated. Without
+              # this block the gateway talks plaintext to port 443 and the
+              # request fails. `sni` must match `host` above.
+              tls:
+                sni: cruise-demo.bytesbrains.net
