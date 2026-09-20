@@ -1,0 +1,12 @@
+# The only ecosystem here is GitHub Actions — there is no application to build and
+# no dependency manifest. Monthly, because this repository is a published recipe
+# rather than active development, and weekly PRs on one vendor-managed workflow
+# would be noise.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
