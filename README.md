@@ -121,11 +121,11 @@ No TLS block, no `sni`, nothing. The older `hostOverride` / `pathOverride` / `pa
 original warning was written around are all marked `deprecated` in the published schema. If you are
 reading advice about explicit TLS for standalone custom hosts, it predates `baseUrl`.
 
-### Kubernetes: still a trap, and a well-disguised one
+### Kubernetes: a trap, but a conditional one
 
-On Kubernetes the trap is real. `AgentgatewayBackend` does **not** infer TLS from `port: 443`. Omit the
-TLS policy and the gateway speaks plaintext to an HTTPS port. Verified by removing exactly that block
-and putting it back:
+On Kubernetes, TLS has to be stated. `AgentgatewayBackend` does **not** infer it from `port: 443` —
+omit the policy and the gateway speaks plaintext to an HTTPS port. Verified by removing exactly that
+block and putting it back:
 
 | `policies.tls` | Result |
 | --- | --- |
