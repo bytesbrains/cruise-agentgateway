@@ -1,0 +1,38 @@
+# agentgateway in front of BytesBrains Cruise.
+#
+#   cp ../.env.example ../.env   # then put your cru_ key in it
+#   docker compose up
+#
+# Then talk OpenAI to http://localhost:4000/v1 and Cruise meters what it costs.
+#
+# The image is upstream agentgateway. This project publishes no images of its own.
+
+services:
+  agentgateway:
+    # Pinned by digest to the build this repo was verified against, which reports
+    # version 1.6.0-alpha.1. That is the `latest` tag, not a release: the newest
+    # published release is 0.8.2 and it does NOT understand this config — the
+    # standalone `llm:` block only exists on the 1.x line. See the README.
+    #   To track upstream instead: ghcr.io/agentgateway/agentgateway:latest
+    image: ghcr.io/agentgateway/agentgateway@sha256:7f3c4cea80587abf2290dff7f563fc9f9885ed17052c08347b4d164a4de62f99
+    container_name: cruise-agentgateway
+    command: ["-f", "/etc/agentgateway/config.yaml"]
+
+    # CRUISE_API_KEY and CRUISE_BASE_URL come from the .env at the repo root,
+    # which is gitignored. The key is never written into this file or the config.
+    env_file:
+      - ../.env
+
+    ports:
+      - "4000:4000"    # OpenAI-compatible endpoint
+      - "19001:19001"  # readiness (/healthz/ready)
+      - "19002:19002"  # prometheus metrics
+
+    volumes:
+      - ../config/standalone/config.yaml:/etc/agentgateway/config.yaml:ro
+
+    restart: unless-stopped
+
+    # No healthcheck: the upstream image is distroless and has no shell, curl or
+    # wget to run one with. Poll http://localhost:19001/healthz/ready from the
+    # host instead — which is what ./smoke.sh does.
