@@ -1,0 +1,13 @@
+BytesBrains Cruise for agentgateway
+© 2026 BYTESBRAINS PTE. LTD. All rights reserved.
+
+This material is provided for use with the BytesBrains Cruise service and agentgateway.
+
+Permission is granted to use, copy and adapt the configuration, examples and scripts in
+this repository for the purpose of connecting agentgateway to BytesBrains Cruise.
+
+BytesBrains is not affiliated with agentgateway, the Linux Foundation, or the Agentic AI
+Foundation. agentgateway is a trademark of its respective owners and is referenced here
+only to describe interoperability.
+
+THE MATERIAL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.

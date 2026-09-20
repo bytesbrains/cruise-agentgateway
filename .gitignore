@@ -1,0 +1,11 @@
+# Secrets never enter this repo (Cruise keys, kubeconfigs, etc.).
+# Keep them in the environment or a local .env — never in git.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+kubeconfig*
+
+*.log
+.DS_Store
