@@ -43,8 +43,8 @@ one experiment worth reading.
 
 ## Quick start
 
-You need Docker, `curl`, and a Cruise key. The free demo takes a `cru_demo_` key and costs nothing to
-run, so this is safe to try end to end.
+You need Docker, `curl`, and a Cruise key. Use the normal demo key from the Cruise dashboard's Demo
+tab for this smoke test. The free demo takes a `cru_demo_` key and costs nothing to run.
 
 ```sh
 cp .env.example .env     # then put your cru_ key in it — .env is gitignored
@@ -171,9 +171,39 @@ Samples are held to one rule: **each must demonstrate something only Cruise does
 shows a model answering through a gateway demonstrates agentgateway, not Cruise, and does not belong
 here. `smoke.sh` asserts on lane routing and budget headers on those grounds.
 
-One consequence worth stating plainly: the demo returns emulated completions and never accumulates
-spend, so **a hard cap tripping mid-run cannot be shown against it.** That sample needs a production key
-and real spend, and is not in v0 rather than being faked.
+### Try the hard-cap demo
+
+The normal demo project still has zero-cost emulated completions. Cruise now also provides a
+separate `demo-cap` project for each demo tenant: $0.002 of emulated spend per served request against
+a $0.01 per-minute cap. Nothing is billed. See the
+[demo-cap contract](https://github.com/bytesbrains/bytesbrains-cruise/blob/dev/docs/demo-cap.md).
+
+1. In the Cruise dashboard's **Demo** tab, find **See the hard cap** and choose
+   **Issue a hard-cap key**.
+2. Set `CRUISE_DEMO_CAP_API_KEY` to that key in your gitignored `.env`. Keep `CRUISE_API_KEY` as
+   your normal demo key and `CRUISE_BASE_URL=https://cruise-demo.bytesbrains.net/v1`.
+3. With Python 3 installed alongside Docker and `curl`, run:
+
+   ```sh
+   ./smoke.sh --budget-cap
+   ```
+
+This mode selects the cap key for the gateway and checks for rising `x-cruise-budget-spend`, then
+HTTP `429` with `error.code: budget_exhausted`, `x-cruise-budget-state: hard`, and `retry-after` of
+1–60 seconds. It waits for that reset and checks that a completion succeeds again with lower spend.
+It exits non-zero if any of those checks fail. Allow up to three minutes, including reset waits.
+
+The contract describes five served requests followed by a refusal within one minute. Spend headers
+on served requests describe **pre-request** spend (`0.0000`, `0.0020`, … `0.0080`); the refusal
+reports `0.0100`. A run can cross a minute boundary, so the sample checks the budget state rather
+than assuming the sixth request must fail. An already-capped key is allowed to reset first.
+
+Keep other calls to your `demo-cap` project stopped during the run; its keys share the same budget.
+The script refuses a production URL. No key is published or included in the sample. `--keep` also
+works here, leaving the gateway configured with the cap key until the next smoke run.
+
+The cap checks have local contract tests (`python3 -m unittest -v test_budget_cap`). Live verification
+through agentgateway is pending a tenant's demo-cap key; this is not yet a verified cap demonstration.
 
 ### Kubernetes
 
@@ -252,6 +282,9 @@ On a clean kind cluster and a local Docker daemon, 2026-09-20:
 - `policies.tls` removed → `400`; restored → `200`. The controlled experiment behind the TLS section.
 - `0.8.2` rejects the standalone config; `latest` accepts it.
 - `smoke.sh` exits `0` on success and non-zero on failure.
+
+On 2026-09-21, the ordinary standalone smoke test was rerun after adding the optional cap mode:
+14 passed, 0 failed. The cap mode itself has not yet been verified against the live demo.
 
 Not verified: production Cruise (`cruise.bytesbrains.net`) end to end — the calls above ran against the
 demo. Auth, TLS and routing are identical; only the key prefix and the base URL differ.
