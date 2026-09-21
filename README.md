@@ -216,6 +216,13 @@ Error: llm: unknown field `llm`, expected one of `config`, `binds`, `policies`, 
 So the compose file pins the `latest` digest that was verified rather than a release tag. Swap it for
 `:latest` to track upstream, and expect the config to need revisiting when the 1.x line is released.
 
+**If `docker compose up` fails to pull, this is why.** That digest is an untagged pre-release build.
+If upstream stops serving it, there is no release tag to fall back to — `0.8.2` rejects the config,
+as above. The fix is to repin: try `:latest` first, and if the config no longer loads, the 1.x line
+has moved and this recipe needs revisiting. Tracked in
+[issue #6](https://github.com/bytesbrains/cruise-agentgateway/issues/6). The Kubernetes path is not
+exposed to this — it runs on published chart releases.
+
 **A related trap, if you use an older build:** `0.8.2` expands `$UPPERCASE` tokens across the raw file
 before parsing it as YAML — including inside comments. A comment mentioning an environment variable
 kills startup with `error looking key 'VAR' up`. Newer builds parse first and expand only values. The
@@ -229,6 +236,7 @@ config here keeps `$` out of its comments regardless.
 | `401 Incorrect API key provided.` | Cruise rejecting the key, relayed intact. Often a `cru_demo_` key against production or the reverse — check `CRUISE_BASE_URL` against the key prefix |
 | `401 Missing bearer token.` | No key reached Cruise. Either the Secret's key is not named `Authorization`, or `00-secret.example.yaml` was applied unedited — its value is empty on purpose |
 | `llm: unknown field` | agentgateway too old — see [Versions](#versions) |
+| `manifest unknown` / the image fails to pull | The pinned digest is no longer served — repin, see [Versions](#versions) |
 
 A `cf-ray` header on a response means the request reached Cruise rather than dying in the gateway.
 Useful for splitting "the gateway is misconfigured" from "Cruise said no".
