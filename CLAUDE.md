@@ -58,8 +58,11 @@ no pricing strategy — in files *and* commit messages.
 
 ## Conventions
 
-- **Changes go through a pull request**, not a push to `main`. The wrokin bot reviews PRs; add the
-  `skip-bot-review` label before pushing a correction so a fix does not buy a re-review.
+- **Changes go through a pull request into `dev`** (the default branch); neither `dev` nor `main`
+  takes direct pushes. `main` takes only release PRs from `dev`, titled `Release vX.Y.Z` and merged
+  with a merge commit; the `release gate` check enforces this and merging tags the version. See
+  `CONTRIBUTING.md`. The wrokin bot reviews PRs; add the `skip-bot-review` label before pushing a
+  correction so a fix does not buy a re-review.
 - **Never edit a sibling repository** to finish work that belongs there. File an issue on it instead,
   carrying the facts so that repo's agent needs nothing re-derived.
 - **Say what was verified and what was not.** The README has a "What was verified" section; changes
