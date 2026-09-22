@@ -79,22 +79,26 @@ if [[ ! -f "$repo_root/.env" ]]; then
   exit 1
 fi
 
-# Source without printing keys. Compose reads normal credentials from .env;
-# the cap override selects its separate key only for this run.
-. "$repo_root/.env"
+# Each value is read in a subshell, so .env cannot overwrite this script's own
+# variables, and returned by command substitution, so no key is printed.
+# Compose reads normal credentials from .env; the cap override selects its
+# separate key only for this run.
+env_value() { (. "$repo_root/.env"; printf '%s' "${!1:-}"); }
+base_url="$(env_value CRUISE_BASE_URL)"
 if [[ "$budget_cap" == true ]]; then
   command -v python3 >/dev/null 2>&1 || { bad "--budget-cap needs python3"; exit 1; }
-  if [[ "${CRUISE_BASE_URL:-https://cruise-demo.bytesbrains.net/v1}" != "https://cruise-demo.bytesbrains.net/v1" ]]; then
+  if [[ "${base_url:-https://cruise-demo.bytesbrains.net/v1}" != "https://cruise-demo.bytesbrains.net/v1" ]]; then
     bad "--budget-cap only runs against https://cruise-demo.bytesbrains.net/v1"
     exit 1
   fi
-  if [[ "${CRUISE_DEMO_CAP_API_KEY:-}" != cru_demo_* || "${CRUISE_DEMO_CAP_API_KEY:-}" == cru_demo_replace_me ]]; then
+  cap_key="$(env_value CRUISE_DEMO_CAP_API_KEY)"
+  if [[ "$cap_key" != cru_demo_* || "$cap_key" == cru_demo_replace_me ]]; then
     bad "Set CRUISE_DEMO_CAP_API_KEY in .env to your dashboard's hard-cap demo key"
     exit 1
   fi
   compose+=(-f "$repo_root/compose/docker-compose.cap.yml")
 fi
-if [[ "$budget_cap" != true && -z "${CRUISE_API_KEY:-}" ]]; then
+if [[ "$budget_cap" != true && -z "$(env_value CRUISE_API_KEY)" ]]; then
   bad "CRUISE_API_KEY is empty in .env"
   exit 1
 fi
