@@ -6,14 +6,14 @@
 # A release PR is dev -> main, titled "Release vX.Y.Z", with a version not yet tagged.
 # The repository settings this relies on are listed in CONTRIBUTING.md.
 #
-# The gate runs on pull_request_target, which loads this file from main, so a PR
-# cannot edit the check that judges it (#13). That is safe only because the gate
-# reads event metadata and checks out nothing: never add a checkout of the PR here.
+# The gate runs on pull_request_target, which loads this file from the default branch,
+# dev, not from the PR. So a PR cannot edit the check that judges it (#13). Changing the
+# gate takes a merged PR into dev, and applies to PRs into main from that merge on.
+# That is safe only because the gate reads event metadata and checks out nothing: never
+# add a checkout of the PR here.
 #
-# Transition, phase 1 of 2: the gate also still runs on pull_request. main's copy
-# of this file had no pull_request_target trigger, so without it the release PR
-# carrying this change would have no "release gate" and could never merge. Once
-# this file is on main, phase 2 drops those pull_request types, keeping `closed`.
+# Tagging stays on pull_request `closed`. The tag job acts only on a merged release PR
+# from this repository's dev branch.
 name: release flow
 
 on:
@@ -22,7 +22,7 @@ on:
     types: [opened, edited, synchronize, reopened]
   pull_request:
     branches: [main]
-    types: [opened, edited, synchronize, reopened, closed]
+    types: [closed]
 
 permissions:
   contents: read

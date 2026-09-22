@@ -17,7 +17,9 @@ These live in GitHub's settings, not in a file, so they are recorded here:
 - **`main`** has the same protection plus a required status check, `release gate`, from
   `.github/workflows/release-flow.yml`, pinned to the GitHub Actions app (`app_id` 15368) so a status
   posted through the API cannot satisfy it. Without that required check, nothing stops a non-release
-  PR from merging into `main`.
+  PR from merging into `main`. The check runs on `pull_request_target`, which takes the workflow from
+  the default branch, `dev`, so a PR cannot rewrite the gate that judges it. That makes `dev`'s
+  protection part of the gate: a change to it lands on `dev` first, through a pull request.
 - **A ruleset on `main`** allows only the merge-commit method.
 - **Fork PR workflows** need a maintainer's approval for every outside contributor
   (`all_external_contributors`), not only first-time ones. A PR could otherwise add its own workflow
