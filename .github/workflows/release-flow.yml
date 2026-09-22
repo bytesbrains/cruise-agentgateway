@@ -1,0 +1,70 @@
+# The branch flow, enforced: features and fixes merge into dev, and main takes only
+# release PRs from dev. Branch protection cannot restrict a PR's source branch, so
+# "release gate" is a required check on main. When a release PR merges, its version
+# is tagged at the merge commit and published as a GitHub release.
+#
+# A release PR is dev -> main, titled "Release vX.Y.Z", with a version not yet tagged.
+name: release flow
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: release gate
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only a versioned release PR from dev may target main
+        # Untrusted PR fields go through env, never into the script text.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "$HEAD_REPO" != "$GITHUB_REPOSITORY" || "$HEAD_REF" != dev ]]; then
+            echo "::error::main takes only release PRs from dev. Open this PR against dev instead."
+            exit 1
+          fi
+          if [[ ! "$TITLE" =~ ^Release\ (v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::Title a release PR 'Release vX.Y.Z'. That version becomes its tag."
+            exit 1
+          fi
+          tag="${BASH_REMATCH[1]}"
+          taken="$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag" \
+            --jq "map(select(.ref == \"refs/tags/$tag\")) | length")"
+          if [[ "$taken" != 0 ]]; then
+            echo "::error::$tag is already tagged. Choose the next version."
+            exit 1
+          fi
+          echo "Release $tag from dev"
+
+  tag:
+    name: tag release
+    if: >-
+      github.event.action == 'closed' && github.event.pull_request.merged &&
+      github.event.pull_request.head.ref == 'dev' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Tag the merge commit and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ ! "$TITLE" =~ ^Release\ (v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::Merged release PR has no 'Release vX.Y.Z' title; tag it by hand."
+            exit 1
+          fi
+          tag="${BASH_REMATCH[1]}"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$MERGE_SHA" \
+            --title "$tag" --generate-notes
