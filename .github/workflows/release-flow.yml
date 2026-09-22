@@ -4,7 +4,9 @@
 # is tagged at the merge commit and published as a GitHub release.
 #
 # A release PR is dev -> main, titled "Release vX.Y.Z", with a version not yet tagged.
-# The repository settings this relies on are listed in CONTRIBUTING.md.
+# This file cannot make the required check un-forgeable on its own: that takes the settings
+# listed in CONTRIBUTING.md — `release gate` required on main and pinned to app 15368, and
+# fork PR workflows needing maintainer approval.
 #
 # The gate runs on pull_request_target, which loads this file from the default branch,
 # dev, not from the PR. So a PR cannot edit the check that judges it (#13). Changing the
