@@ -202,8 +202,8 @@ Keep other calls to your `demo-cap` project stopped during the run; its keys sha
 The script refuses a production URL. No key is published or included in the sample. `--keep` also
 works here, leaving the gateway configured with the cap key until the next smoke run.
 
-The cap checks have local contract tests (`python3 -m unittest -v test_budget_cap`). Live verification
-through agentgateway is pending a tenant's demo-cap key; this is not yet a verified cap demonstration.
+The cap checks have local contract tests (`python3 -m unittest -v test_budget_cap`). The live cap cycle
+through agentgateway was verified on 2026-09-22; see [What was verified](#what-was-verified).
 
 ### Kubernetes
 
@@ -284,7 +284,14 @@ On a clean kind cluster and a local Docker daemon, 2026-09-20:
 - `smoke.sh` exits `0` on success and non-zero on failure.
 
 On 2026-09-21, the ordinary standalone smoke test was rerun after adding the optional cap mode:
-14 passed, 0 failed. The cap mode itself has not yet been verified against the live demo.
+14 passed, 0 failed.
+
+On 2026-09-22, `./smoke.sh --budget-cap` ran against the live demo with a tenant's hard-cap key and
+exited `0`. Served requests reported pre-request spend of `0.0040`, `0.0060` and `0.0080`. The next call
+was refused with `429` `budget_exhausted` at `0.0100` and `retry-after: 32`. After the wait, a
+completion was served again at `0.0000`. The first run failed with a `403` (Cloudflare error `1010`):
+agentgateway forwards the client's `User-Agent`, and the demo's edge rejects Python's default
+`Python-urllib`. The script now sends its own `User-Agent`.
 
 Not verified: production Cruise (`cruise.bytesbrains.net`) end to end — the calls above ran against the
 demo. Auth, TLS and routing are identical; only the key prefix and the base URL differ.

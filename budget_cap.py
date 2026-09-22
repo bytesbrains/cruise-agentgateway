@@ -20,7 +20,9 @@ def completion():
             "messages": [{"role": "user", "content": "Reply with OK"}],
             "max_tokens": 8,
         }).encode(),
-        headers={"Content-Type": "application/json"},
+        # The gateway forwards the client's User-Agent, and the demo's edge
+        # rejects urllib's default one with a 403 (Cloudflare error 1010).
+        headers={"Content-Type": "application/json", "User-Agent": "cruise-agentgateway-smoke"},
     )
     try:
         response = urllib.request.urlopen(request, timeout=15)
