@@ -6,7 +6,8 @@
 # A release PR is dev -> main, titled "Release vX.Y.Z", with a version not yet tagged.
 # This file cannot make the required check un-forgeable on its own: that takes the settings
 # listed in CONTRIBUTING.md — `release gate` required on main and pinned to app 15368, and
-# fork PR workflows needing maintainer approval.
+# fork PR workflows needing maintainer approval. Even then, anyone with write access can
+# satisfy the check with a same-named job of their own; see CONTRIBUTING.md.
 #
 # The gate runs on pull_request_target, which loads this file from the default branch,
 # dev, not from the PR. So a PR cannot edit the check that judges it (#13). Changing the
