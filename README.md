@@ -304,4 +304,5 @@ key is set without printing it. Rotate anything you paste anywhere.
 
 ## Licence
 
-© 2026 BYTESBRAINS PTE. LTD. All rights reserved. See [LICENSE.txt](LICENSE.txt).
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE). The license covers this repository, not the
+Cruise service, and grants no right to the BytesBrains or Cruise names.
