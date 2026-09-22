@@ -11,8 +11,7 @@ default branch.
 ## Repository settings the flow relies on
 
 These live in GitHub's settings, not in a file, so they are recorded here. Nothing in the repository
-enforces them: `release gate` is a check name, and only the settings below stop an outside
-contributor's PR from posting a same-named check of its own.
+enforces them.
 
 - **`dev`** is the repository's default branch, and must stay the default. `pull_request_target`
   loads the workflow from the default branch, so if the default ever moved to `main`, the gate would
@@ -30,12 +29,14 @@ contributor's PR from posting a same-named check of its own.
   (`all_external_contributors`), not only first-time ones. A PR could otherwise add its own workflow
   with a job named `release gate`.
 
-**These settings do not stop anyone with write access.** The pin on app 15368 accepts any
-GitHub Actions job named `release gate`, from any workflow file. A collaborator can push a branch to this
-repository with a workflow of their own that defines that job. It needs no approval, runs as app
-15368, and satisfies the required check. Grant write access only to people trusted with `main`.
-Closing this gap would take requiring the workflow file itself, through a ruleset, rather than a check
-name.
+Tested on 2026-09-22 in a throwaway PR into `main` (#17), from a branch in this repository. Each
+of these left the PR blocked:
+
+- Editing the gate to `exit 0`. The gate ran from `dev`'s copy and failed.
+- Also giving the PR's own copy of the workflow a `pull_request` gate, which passed. Every
+  `release gate` run on the head commit counts toward the required check, so `dev`'s failing run
+  still blocked the merge, even when the passing run was the newest.
+- Cancelling `dev`'s run before it finished. A cancelled required run also blocks.
 
 Read back over the API on 2026-09-22, so this is what was checked rather than what was intended:
 
