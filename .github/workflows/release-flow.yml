@@ -25,7 +25,7 @@ on:
     types: [opened, edited, synchronize, reopened]
   pull_request:
     branches: [main]
-    types: [closed]
+    types: [opened, synchronize, reopened, closed]
 
 permissions:
   contents: read
