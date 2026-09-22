@@ -6,6 +6,7 @@
 #
 #   ./smoke.sh          stand up, assert, tear down
 #   ./smoke.sh --keep    leave the gateway running afterwards
+#   ./smoke.sh --budget-cap   prove the free demo cap and recovery (needs python3)
 #
 # Needs: docker, curl. Reads CRUISE_API_KEY from .env at the repo root.
 # Defaults to the free Cruise demo, so this costs nothing to run.
@@ -17,7 +18,15 @@ compose=(docker compose --env-file "$repo_root/.env" -f "$repo_root/compose/dock
 gateway="http://localhost:4000"
 readiness="http://localhost:19001/healthz/ready"
 keep=false
-[[ "${1:-}" == "--keep" ]] && keep=true
+budget_cap=false
+for arg in "$@"; do
+  case "$arg" in
+    --keep) keep=true ;;
+    --budget-cap) budget_cap=true ;;
+    *) printf 'Usage: %s [--keep] [--budget-cap]\n' "$0" >&2; exit 2 ;;
+  esac
+done
+started=false
 
 pass=0
 fail=0
@@ -34,7 +43,9 @@ body="$(mktemp)"
 
 cleanup() {
   rm -f "$hdr" "$body"
-  if [[ "$keep" == true ]]; then
+  if [[ "$started" != true ]]; then
+    return
+  elif [[ "$keep" == true ]]; then
     printf '\nLeaving the gateway up on %s (--keep). Stop it with:\n  %s down\n' \
       "$gateway" "${compose[*]}"
   else
@@ -68,16 +79,35 @@ if [[ ! -f "$repo_root/.env" ]]; then
   exit 1
 fi
 
-# Sourced in a subshell check so the key is never echoed.
-if ! (set -a; . "$repo_root/.env"; set +a; [[ -n "${CRUISE_API_KEY:-}" ]]); then
+# Each value is read in a subshell, so .env cannot overwrite this script's own
+# variables, and returned by command substitution, so no key is printed.
+# Compose reads normal credentials from .env; the cap override selects its
+# separate key only for this run.
+env_value() { (. "$repo_root/.env"; printf '%s' "${!1:-}"); }
+base_url="$(env_value CRUISE_BASE_URL)"
+if [[ "$budget_cap" == true ]]; then
+  command -v python3 >/dev/null 2>&1 || { bad "--budget-cap needs python3"; exit 1; }
+  if [[ "${base_url:-https://cruise-demo.bytesbrains.net/v1}" != "https://cruise-demo.bytesbrains.net/v1" ]]; then
+    bad "--budget-cap only runs against https://cruise-demo.bytesbrains.net/v1"
+    exit 1
+  fi
+  cap_key="$(env_value CRUISE_DEMO_CAP_API_KEY)"
+  if [[ "$cap_key" != cru_demo_* || "$cap_key" == cru_demo_replace_me ]]; then
+    bad "Set CRUISE_DEMO_CAP_API_KEY in .env to your dashboard's hard-cap demo key"
+    exit 1
+  fi
+  compose+=(-f "$repo_root/compose/docker-compose.cap.yml")
+fi
+if [[ "$budget_cap" != true && -z "$(env_value CRUISE_API_KEY)" ]]; then
   bad "CRUISE_API_KEY is empty in .env"
   exit 1
 fi
-ok "CRUISE_API_KEY is set"
+ok "gateway key is set"
 
 # ------------------------------------------------------------------ bring up --
 
 say "Starting agentgateway (upstream image, no build)"
+started=true
 "${compose[@]}" up -d --quiet-pull
 
 # curl's exit status is tracked separately from the HTTP status, so "could not
@@ -105,6 +135,12 @@ else
   fi
   "${compose[@]}" logs --tail 40
   exit 1
+fi
+
+if [[ "$budget_cap" == true ]]; then
+  say "Hard cap through the gateway (emulated charges, no real spend)"
+  python3 "$repo_root/budget_cap.py"
+  exit "$?"
 fi
 
 # ------------------------------------------------------------------ the call --

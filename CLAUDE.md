@@ -15,8 +15,11 @@ cp .env.example .env     # a cru_demo_ key; .env is gitignored
 ./smoke.sh --keep        # leave the gateway on :4000
 ```
 
-There is no test suite beyond `smoke.sh`. It needs Docker and `curl`, and it is the check to run
-before claiming anything works.
+`smoke.sh` needs Docker and `curl`, and it is the check to run before claiming the integration works.
+`./smoke.sh --budget-cap` also needs Python 3 and `CRUISE_DEMO_CAP_API_KEY` in `.env`, issued from the
+dashboard's Demo tab. It checks emulated spend, refusal, and recovery on the separate cap project.
+Run `python3 -m unittest -v test_budget_cap` for local contract edge cases; those tests do not replace
+a live smoke run.
 
 Kubernetes is verified separately and needs a cluster:
 
@@ -30,8 +33,10 @@ kubectl apply -f config/kubernetes/01-backend.yaml -f config/kubernetes/02-gatew
 
 **Test against the demo, never production.** `cruise-demo.bytesbrains.net` takes a `cru_demo_` key,
 costs nothing, and returns the real response shape and the full `x-cruise-*` header set. It is what
-makes a public smoke test something a stranger can run. Its one limit: emulated responses that never
-accumulate spend, so a budget cap tripping cannot be demonstrated against it.
+makes a public smoke test something a stranger can run. The normal demo project never accumulates
+spend. Each tenant's separate `demo-cap` project charges emulated $0.002 per call against $0.01 per
+minute, allowing a free cap demo with its own key. Never publish a demo key; readers issue their own
+from the dashboard. Avoid concurrent calls to the cap project when testing its spend sequence.
 
 **No key ever enters a file here.** Keys live in `.env` (gitignored) or a Kubernetes Secret created
 from the environment. Never print, echo or commit a `cru_` value. The example Secret ships with an

@@ -1,0 +1,6 @@
+# Selected by ./smoke.sh --budget-cap after its demo-only preflight.
+services:
+  agentgateway:
+    environment:
+      CRUISE_API_KEY: ${CRUISE_DEMO_CAP_API_KEY:?Set your demo-cap key in .env}
+      CRUISE_BASE_URL: https://cruise-demo.bytesbrains.net/v1

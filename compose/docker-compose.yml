@@ -24,6 +24,9 @@ services:
     # which is gitignored. The key is never written into this file or the config.
     env_file:
       - ../.env
+    environment:
+      # The optional key is selected by the cap override, not passed as an extra secret.
+      CRUISE_DEMO_CAP_API_KEY: ""
 
     ports:
       - "4000:4000"    # OpenAI-compatible endpoint
