@@ -1,0 +1,13 @@
+# Throwaway spoof test for #13. Do not merge.
+name: spoof
+on:
+  pull_request_review:
+    types: [submitted]
+permissions:
+  contents: read
+jobs:
+  gate:
+    name: release gate
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0
