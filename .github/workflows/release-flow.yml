@@ -5,9 +5,21 @@
 #
 # A release PR is dev -> main, titled "Release vX.Y.Z", with a version not yet tagged.
 # The repository settings this relies on are listed in CONTRIBUTING.md.
+#
+# The gate runs on pull_request_target, which loads this file from main, so a PR
+# cannot edit the check that judges it (#13). That is safe only because the gate
+# reads event metadata and checks out nothing: never add a checkout of the PR here.
+#
+# Transition, phase 1 of 2: the gate also still runs on pull_request. main's copy
+# of this file had no pull_request_target trigger, so without it the release PR
+# carrying this change would have no "release gate" and could never merge. Once
+# this file is on main, phase 2 drops those pull_request types, keeping `closed`.
 name: release flow
 
 on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
   pull_request:
     branches: [main]
     types: [opened, edited, synchronize, reopened, closed]
@@ -49,6 +61,7 @@ jobs:
   tag:
     name: tag release
     if: >-
+      github.event_name == 'pull_request' &&
       github.event.action == 'closed' && github.event.pull_request.merged &&
       github.event.pull_request.head.ref == 'dev' &&
       github.event.pull_request.head.repo.full_name == github.repository
