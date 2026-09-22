@@ -4,6 +4,7 @@
 # is tagged at the merge commit and published as a GitHub release.
 #
 # A release PR is dev -> main, titled "Release vX.Y.Z", with a version not yet tagged.
+# The repository settings this relies on are listed in CONTRIBUTING.md.
 name: release flow
 
 on:
@@ -66,5 +67,14 @@ jobs:
             exit 1
           fi
           tag="${BASH_REMATCH[1]}"
+          # Checked again here because the gate ran before merge and the tag could have
+          # appeared since. `gh release create` does not fail on an existing tag: it
+          # ignores --target and publishes the release on that tag's old commit.
+          taken="$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag" \
+            --jq "map(select(.ref == \"refs/tags/$tag\")) | length")"
+          if [[ "$taken" != 0 ]]; then
+            echo "::error::$tag was tagged after the gate passed. $MERGE_SHA is untagged; tag it by hand with the next version."
+            exit 1
+          fi
           gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$MERGE_SHA" \
             --title "$tag" --generate-notes
